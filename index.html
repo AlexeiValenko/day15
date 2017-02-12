@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://code.jquery.com/jquery-3.1.1.js"
+            integrity="sha256-16cdPddA6VdVInumRGo6IbivbERE8p7CQR3HzTBuELA="
+            crossorigin="anonymous">
+    </script>
+   <!--  <script srs="node_modules/jquery/dist/jquery.js"></script>
+
+
+   add template to list, in js remove it
+
+   template = ul.html()
+   ul.empty();
+   forEach
+     li = $(template);
+     put data
+      ul.append(li)
+
+
+` give option put in few lines and put inside another string
+var tmp ="ggg"
+var template =  `<div> ${tmp}
+                    </div>`
+
+
+                    li::before{
+                        content: "[+] '
+                    }
+   -->
+    <link rel="stylesheet" href="styles.css">
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+
+</head>
+<body>
+
+<div class="layout">
+    <div class="header">
+        <button id="back" class="history">Back</button>
+        <button id="forward" class="history">Forward</button>
+        <input type="text" id="path" class="path">
+        <button id="go" class="path">Go</button>
+
+    </div>
+    <div class="sub-layout">
+        <div class="side-bar">
+
+
+             <ul class="list"></ul>
+
+
+        </div>
+        <div class="content"></div>
+    </div>
+</div>
+
+
+<menu type="context" id="contextMenu">
+    <menuitem id="newFolder">New Folder</menuitem>
+    <menuitem id="newFile">New File</menuitem>
+    <menuitem id="rename">Rename</menuitem>
+    <menuitem id="delete">Delete</menuitem>
+</menu>
+
+
+</body>
+</html>
