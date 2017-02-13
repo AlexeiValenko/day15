@@ -39,7 +39,7 @@ button {
 
 .side-bar {
     background-color: yellow;
-    overflow: scroll;
+    overflow: auto;
     min-width: 200px;
 }
 
@@ -113,12 +113,7 @@ li.directory {
 
 
 
-
-
-
-
-
-menu {
+.contextMenu {
     position: absolute;
     background-color: white;
     width: 150px;
@@ -128,14 +123,14 @@ menu {
     display: none;
 }
 
-menu > menuitem {
+.menuitem {
     display: block;
     padding: 10px;
     border-bottom: 1px solid gray;
     font-size: 1em;
 }
 
-menu > menuitem:hover {
-    background-color: gray;
+.menuitem:hover {
+    background-color: lightgray;
     cursor: pointer;
 }
