@@ -8,45 +8,16 @@
 <body oncontextmenu="return (false)">
 <script src="node_modules/jquery/dist/jquery.js"></script>
 
-
-<!--
-<script src="https://code.jquery.com/jquery-3.1.1.js"
-        integrity="sha256-16cdPddA6VdVInumRGo6IbivbERE8p7CQR3HzTBuELA="
-        crossorigin="anonymous">
-</script>
-
- <script srs="node_modules/jquery/dist/jquery.js"></script>
-
-   add template to list, in js remove it
-
-   template = ul.html()
-   ul.empty();
-   forEach
-     li = $(template);
-     put data
-      ul.append(li)
-
-
-` give option put in few lines and put inside another string
-var tmp ="ggg"
-var template =  `<div> ${tmp}
-                    </div>`
-
-
-                    li::before{
-                        content: "[+] '
-                    }
-   -->
 <link rel="stylesheet" href="styles.css">
 <script src="data.js"></script>
 <script src="app.js"></script>
 
 
     <ul type="context" class="contextMenu">
-        <li class="menuitem" id="newFolder">New Folder</li>
-        <li class="menuitem" id="newFile">New File</li>
-        <li class="menuitem" id="rename">Rename</li>
-        <li class="menuitem" id="delete">Delete</li>
+        <li class="menuitem foldermenu contentmenu" id="newFolder">New Folder</li>
+        <li class="menuitem foldermenu contentmenu" id="newFile">New File</li>
+        <li class="menuitem filemenu foldermenu" id="rename">Rename</li>
+        <li class="menuitem filemenu foldermenu" id="delete">Delete</li>
     </ul>
 
 
@@ -63,7 +34,7 @@ var template =  `<div> ${tmp}
         <div class="side-bar">
 
 
-             <ul class="list"></ul>
+            <ul class="list"></ul>
 
 
         </div>

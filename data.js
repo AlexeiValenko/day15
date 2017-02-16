@@ -1,11 +1,15 @@
+var fsStorage = [];
 
+
+var fileSystem = (function() {
     'use strict'
 
-
+    var ABSENT = -1;
+/*
     var fsStorage = [{
         id: 0,
         name: 'root',
-        type: 'directory',
+        type: 'folder',
         children: [{
             id: 1,
             name: 'file1.txt',
@@ -16,7 +20,7 @@
             {
                 id: 2,
                 name: 'sub1',
-                type: 'directory',
+                type: 'folder',
                 children: [
 
                     {
@@ -48,28 +52,28 @@
         ]
     }
     ];
+*/
 
-
-//var fsStorage = [];
+//    var fsStorage = [];
     var flatSystem = [];
     var root = {
         id: 0,
         name: 'root',
-        type: 'directory',
+        type: 'folder',
         children: []
     };
 
-//fsStorage.push(root);
+    fsStorage.push(root);
     var lastId = 0;
 
+//    var lastId = 5;
     var tmpLastId = 0;
-    var tmpFsStorage = [];
     var treatedNodes = 0;
 
     var myHistory = [];
-    myHistory.push(root);
+//    myHistory.push(root);
 
-    var currentHistoryPosition = 0;
+    var currentHistoryPosition = -1;
 
     function childId(folder, index) {
         return folder.children[index].id;
@@ -88,12 +92,10 @@
     }
 
     function addChild(folder, content) {
-
         folder.children.push(content);
     }
 
     function deleteChild(folder, index) {
-        folder.children[index].id = -1;
         folder.children.splice(index, 1);
     }
 
@@ -122,7 +124,8 @@
                 else return;
             } else {
                 if (array[i].children) {
-                    return findChildren(array[i].children, id);
+                    var children = findChildren(array[i].children, id);
+                    if(children) return children;
                 }
             }
         }
@@ -131,11 +134,11 @@
     function findFile(array, id) {
         var file;
         for (var i = 0; i < array.length; i++) {
+            if (array[i].id == id) return array[i];
             if (array[i].children) {
                 file = findFile(array[i].children, id);
                 if (file) return file;
             }
-            if (array[i].id == id) return array[i];
         }
     }
 
@@ -174,22 +177,16 @@
     }
 
     function getIdByPathRecursevly(path,current) {
-
-
         if(path[0] == current.name) {
             if(path.length == 1) return current.id;
             path.shift();
-            if(current.type == 'file') return -1;
+            if(current.type == 'file') return ABSENT;
             for(var i = 0; i < current.children.length; i++) {
                 var id = getIdByPathRecursevly(path,current.children[i]);
-                if(id != -1) return id;
+                if(id != ABSENT) return id;
             }
-
         }
-
-        return -1;
-
-
+        return ABSENT;
     }
 
     function getIdByPath(path) {
@@ -200,18 +197,31 @@
     function deleteFileOrFolder(id) {
         var father = findFather(id);
         for (var i in father.children) {
-            if (childName(father, i) == id) {
+            if (childId(father, i) == id) {
                 deleteChild(father, i);
+                saveSystemToFile();
                 return;
             }
         }
-        saveSystemToFile();
     }
 
     function usedName(father, name) {
         for (var i in father.children) {
             if (childName(father, i) == name) {
                 return true;
+            }
+        }
+        return false;
+    }
+
+    function existId(id, array) {
+        var array = (array || fsStorage);
+        for(var i = 0; i < array.length; i++) {
+            if(array[i].id == id) return true;
+
+            if(array[i].type == 'folder') {
+                var result = existId(id,array[i].children);
+                if(result) return result;
             }
         }
         return false;
@@ -239,7 +249,7 @@
 
     function createFolder(father) {
         var name = uniqueName(father, 'New Folder');
-        var newFolder = {id: ++lastId, name: name, children: [], type: 'directory'}
+        var newFolder = {id: ++lastId, name: name, children: [], type: 'folder'}
         addChild(father, newFolder);
         saveSystemToFile();
         return newFolder;
@@ -251,7 +261,7 @@
     }
 
     function readSystemFromFile() {
-        tmpFsStorage = [];
+        fsStorage = [];
         tmpLastId = 0;
         treatedNodes = 0;
 
@@ -261,8 +271,7 @@
             makeSystemTree();
             if (treatedNodes < flatSystem.length) throw new Error("Extra data");
             lastId = tmpLastId;
-            fsStorage = tmpFsStorage;
-            console.log('System was red successfully');
+          //  console.log('System was red successfully');
         } catch (e) {
             fsStorage = [];
             fsStorage.push(root);
@@ -291,24 +300,24 @@
             }
             clone['father'] = father['id'];
             flatSystem.push(clone);
-            if (node.type == 'directory') putChildrensToFlat(node);
+            if (node.type == 'folder') putChildrensToFlat(node);
         });
     }
 
     function makeSystemTree() {
         if (flatSystem.length == 0) {
-            tmpFsStorage.push(root);
+            fsStorage.push(root);
             return;
         }
 
         for (var i = 0; i < flatSystem.length; i++) {
             if (flatSystem[i].id == 0) {  // find root
-                nodeTreatment(tmpFsStorage, flatSystem[i]);
+                nodeTreatment(fsStorage, flatSystem[i]);
                 break;
             }
         }
-        if (!tmpFsStorage[0]) throw new Error('Wrong fields');
-        addToSystemTreeChilds(tmpFsStorage[0]);
+        if (!fsStorage[0]) throw new Error('Wrong fields');
+        addToSystemTreeChilds(fsStorage[0]);
     }
 
     function nodeTreatment(container, node) {
@@ -321,7 +330,7 @@
     }
 
     function isFolder(node) {
-        return node.type == 'directory';
+        return node.type == 'folder';
     }
 
     function updateLastId(newId) {
@@ -347,5 +356,24 @@
 
     function checkFields(node) {
         return 'id' in node && 'father' in node && 'type' in node && 'name' in node &&
-            ((node.type == 'file' && 'content' in node ) || node.type == 'directory');
+            ((node.type == 'file' && 'content' in node ) || node.type == 'folder');
     }
+
+    return {
+       // fsStorage: fsStorage,
+        myHistory: myHistory,
+        currentHistoryPosition: currentHistoryPosition,
+        findFile: findFile,
+        findChildren: findChildren,
+        findFather: findFather,
+        findFullPath: findFullPath,
+        createFile: createFile,
+        createFolder: createFolder,
+        deleteFileOrFolder: deleteFileOrFolder,
+        usedName: usedName,
+        getIdByPath: getIdByPath,
+        readSystemFromFile: readSystemFromFile,
+        saveSystemToFile: saveSystemToFile,
+    }
+
+})();

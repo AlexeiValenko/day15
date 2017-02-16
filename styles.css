@@ -98,7 +98,7 @@ li.file {
     text-align: center;
 }
 
-li.directory {
+li.folder {
     display: inline-block;
     width: 100px;
     height: 130px;
@@ -133,4 +133,20 @@ li.directory {
 .menuitem:hover {
     background-color: lightgray;
     cursor: pointer;
+}
+
+ul.contextMenu li {
+    display: none;
+}
+
+ul[data-type=folder] li.foldermenu {
+    display: block;
+}
+
+ul[data-type=content] li.contentmenu {
+    display: block;
+}
+
+ul[data-type=file] li.filemenu {
+    display: block;
 }

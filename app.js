@@ -1,8 +1,15 @@
 (function () {
     'use strict'
 
-    var menuUl;
 
+    var ABSENT = -1;
+    var SPLIT_SIGN = '/';
+    var ROOT = 0;
+
+
+    var menuUl;
+    var fullSystemList;
+    var content;
     var currentFile = {};
 
 //  event handlers
@@ -11,122 +18,157 @@
         e.stopPropagation();
 
         var id = $(this).data('id');
-        if(id != myHistory[currentHistoryPosition].id) {
-            myHistory.splice(currentHistoryPosition + 1, myHistory.length); // check +1
-            myHistory.push(findFile(fsStorage, id));
-            currentHistoryPosition++;
+        if(id != fileSystem.myHistory[fileSystem.currentHistoryPosition]) {
+            fileSystem.myHistory.splice(fileSystem.currentHistoryPosition + 1, fileSystem.myHistory.length); // check +1
+            fileSystem.myHistory.push(id);
+            fileSystem.currentHistoryPosition++;
         }
         expand(id, true);
         showContent(id);
         return false;
     }
 
-    function clickExpander() {
+    function clickExpander(e) {
         expand($(this).data('id'));
     }
 
-    function clickAddFile() {
+    function clickAddFile(e) {
         e.stopPropagation();
-        var id = $(this).data('id');
 
-        var father = findFile(fsStorage, id);
-        var node = createFile(father, '');
+        hideContextMenu();
+
+        var id = $('.contextMenu').data('id');
+
+        var father = fileSystem.findFile(fsStorage, id);
+        var node = fileSystem.createFile(father, '');
 
         var upperUl = $('ul[data-id=' + id + ']');
         var li = $('<li name="node" data-id="' + node.id + '"></li>');
         var link = $('<a href="" data-id="' + node.id + '">' + node.name + '</a></li>');
-        $(li).contextmenu(showContextMenu);
+        $(link).contextmenu(showContextMenu);
         $(link).click(clickFileOrFolder);
         li.appendTo(upperUl);
         li.addClass("hiden");
         li.append(link);
+        showContent(id);
         return false;
     }
 
     function clickAddFolder(e) {
         e.stopPropagation();
-        var id = $(this).data('id');
 
-        var father = findFile(fsStorage, id);
-        var node = createFolder(father, '');
+        hideContextMenu();
+
+        var id = $('.contextMenu').data('id');
+
+        var father = fileSystem.findFile(fsStorage, id);
+        var node = fileSystem.createFolder(father, '');
         var upperUl = $('ul[data-id=' + id + ']');
 
         var li = $('<li name="node" data-id="' + node.id + '"></li>');
-        var link = $('<a href="" data-id="' + node.id + '">' + node.name + '</a></li>');
+        var link = $('<a href="" data-id="' + node.id + '" data-type="' + node.type + '">' + node.name + '</a></li>');
         $(link).click(clickFileOrFolder);
-        $(li).contextmenu(showContextMenu);
+        $(link).contextmenu(showContextMenu);
 
         li.appendTo(upperUl);
 
 
         var button = $('<button class="expand" data-id="' + node.id + '">+</button>');
         $(button).click(clickExpander);
-        li.addClass('folder');
+        li.addClass('directory');
         li.append(button).append(link);
         var ul = $('<ul data-id="' + node.id + '" class="hiden"></ul>');
-        $(li).after(ul);
+        li.append(ul);
+        showContent(id);
         return false;
     }
 
     function clickDelete(e) {
         e.stopPropagation();
-        var id = $(this).data('id');
+
+        hideContextMenu();
+
+        var id = $('.contextMenu').data('id');
         if (id == 0) {
             alert('You can not delete root');
             return false;
         }
-        deleteFileOrFolder(id);
-        $('li[data-id=' + id + ')').remove();
+        fileSystem.deleteFileOrFolder(id);
+        $('li[data-id=' + id + ']').remove();
+     //   $('ul[data-id=' + id + ']').remove();
+
+        var contentId = $(content).attr("data_id");
+        if(fileSystem.findFile(fsStorage, id) == undefined) {
+            showContent(ROOT);
+        }
+
         return false;
     }
 
     function clickRename(e) {
         e.stopPropagation();
-        var id = $(this).data('id');
+
+        hideContextMenu();
+
+        var id = $('.contextMenu').data('id');
         if (id == 0) {
             alert('You can not rename root');
             return false;
         }
-        var father = findFather(id);
-        do {
-            var name = prompt('Incert new name');
-            if (name == null) return false;
-        } while (usedName(father, name));
-        var file = findFile(father.children, id);
-        file.name = name;
-        $('li[data-id=' + id + ')').text(name);
+        var father = fileSystem.findFather(id);
+        setTimeout(function () {
+            do {
+                var name;
+
+                name = prompt('Insert new name');
+
+                if (name == null) return false;
+            } while (fileSystem.usedName(father, name));
+            var file = fileSystem.findFile(father.children, id);
+            file.name = name;
+            $('a[data-id=' + id + ']').text(name);
+            showContent(father.id);
+        }, 10);
+
         return false;
     }
 
     function clickBack() {
-        e.stopPropagation();
-        while(currentHistoryPosition != - 1 ) {
-            currentHistoryPosition--;
-            var id = myHistory[currentHistoryPosition].id;
-            if(id == -1) continue;
+         while(fileSystem.currentHistoryPosition > 0 ) {
+             fileSystem.currentHistoryPosition--;
+            var id = fileSystem.myHistory[fileSystem.currentHistoryPosition];
+            if( !fileSystem.findFile(fsStorage, id)) {
+                fileSystem.myHistory.splice(fileSystem.currentHistoryPosition,1);
+                continue;
+            }
+
             showContent(id);
             break;
-        }
+       }
         return false;
     }
 
     function clickForward() {
-        e.stopPropagation();
-        while(currentHistoryPosition != myHistory.length - 1 ) {
-            currentHistoryPosition++;
-            var id = myHistory[currentHistoryPosition].id;
-            if(id == -1) continue;
-            showContent(id);
-            break;
-        }
+         while(fileSystem.currentHistoryPosition != fileSystem.myHistory.length - 1 ) {
+             fileSystem.currentHistoryPosition++;
+             var id = fileSystem.myHistory[fileSystem.currentHistoryPosition];
+             if( !fileSystem.findFile(fsStorage, id)) {
+                 fileSystem.myHistory.splice(fileSystem.currentHistoryPosition,1);
+                 fileSystem.currentHistoryPosition--;
+                 continue;
+             }
+             showContent(id);
+             break;
+
+          }
         return false;
     }
 
-    function clickGo() {
+    function clickGo(e) {
         var path = $('input#path').val();
-        var pathArray = path.split('/');
-        var id = getIdByPath(pathArray);
-        if(id == -1) {
+        var pathArray = path.split(SPLIT_SIGN);
+        var id = fileSystem.getIdByPath(pathArray);
+        if(id == ABSENT) {
             alert('Wrong path');
             return false;
         }
@@ -134,23 +176,26 @@
         showContent(id);
     }
 
-    function clickSave() {
+    function clickSave(e) {
         currentFile.content = $('textarea.content').val();
     }
 
-    function clickCancel() {
+    function clickCancel(e) {
         $('textarea.content').val(currentFile.content);
     }
 
-
+// add different types of menu
     function showContextMenu(e) {
         e.stopPropagation();
-        var id = $(e.currentTarget).children('a').attr('data-id');
-        $('.contexMenu').css('display','block');
-        $('.contextMenu').css('display', 'block');
-        $('.contextMenu').css('left', e.pageX - 10 + 'px');
-        $('.contextMenu').css('top', e.pageY - 10 + 'px');
-        $('.contextMenu').data('id', id);
+        var id = $(e.currentTarget).attr('data-id');
+        var type = $(e.currentTarget).attr('data-type');
+        if( id == undefined || type == undefined) return false;
+        $('ul.contextMenu').css('left', e.pageX - 10 + 'px');
+        $('ul.contextMenu').css('top', e.pageY - 10 + 'px');
+        $('ul.contextMenu').attr('data-id', id);
+        $('ul.contextMenu').data('id', id);
+        $('ul.contextMenu').attr('data-type', type);
+        $('ul.contextMenu').css('display', 'block');
         return false;
     }
 
@@ -162,18 +207,18 @@
 
     function makeThree(node, upperUl) {
         var li = $('<li name="node" data-id="' + node.id + '"></li>');
-        var link = $('<a href="" data-id="' + node.id + '">' + node.name + '</a></li>');
+        var link = $('<a href="" data-id="' + node.id + '" data-type="' + node.type + '">' + node.name + '</a></li>');
         $(link).click(clickFileOrFolder);
-        $(li).contextmenu(showContextMenu);
+        $(link).contextmenu(showContextMenu);
         li.appendTo(upperUl);
 
         if (node['children']) {
             var button = $('<button class="expand" data-id="' + node.id + '">+</button>');
             $(button).click(clickExpander);
-            li.addClass('folder');
+            li.addClass('directory');
             li.append(button).append(link);
             var ul = $('<ul data-id="' + node.id + '" class="hiden"></ul>');
-            $(li).after(ul);
+            li.append(ul);
             if (node.children.length > 0) {
                 node.children.forEach(function (child) {
                     makeThree(child, ul);
@@ -186,36 +231,37 @@
     }
 
     function showContent(id) {
-        var path = findFullPath(id);
+        var path = fileSystem.findFullPath(id);
         $('input.path').val(path);
 
         var item = $('li[data-id=' + id + ']');
 
-        $('.content').html('');//remove();
+        $(content).html('');
+        $(content).attr('data-type','content');
+        $(content).attr('data-id',id);
 
-        currentFile = findFile(fsStorage, id);
+        currentFile = fileSystem.findFile(fsStorage, id);
 
-        if (item.hasClass('folder')) {
-            var content = $('<ul></ul>');// data-id="' + id + '"
-            $('.content').append(content);
-            var children = findChildren(fsStorage, id);
+        if (item.hasClass('folder') || item.hasClass('directory')) {
+            var emptyUl = $('<ul data-type="content"></ul>');
+            $(content).append(content);
+            var children = fileSystem.findChildren(fsStorage, id);
             children.forEach(function (child) {
                 addChildToContent(content, child);
             });
         } else {
             var fileContent = currentFile.content;
-            console.log(currentFile);
             var text = $('<textarea name="fileContent" class="content">' + fileContent + '</textarea>');
             var buttonSave = $('<button class="content">Save</button>');
             var buttonCancel = $('<button class="content">Cancel</button>');
             $(buttonSave).click(clickSave);
             $(buttonCancel).click(clickCancel);
-            $('.content').append(text).append(buttonCancel).append(buttonSave);
+            $(content).append(text).append(buttonCancel).append(buttonSave);
         }
     }
 
     function addChildToContent(content, node) {// contextmenu="menu"
-        var link = $('<li  data-id="' + node.id + '" class="' + node.type + '"><span>' + node.name + '</span> </li>');
+        var link = $('<li data-id="' + node.id + '"  data-type="' + node.type + '" class="' + node.type + '"><span>' + node.name + '</span> </li>');
         $(link).click(clickFileOrFolder);
         $(link).contextmenu(showContextMenu);
         $(content).append(link);
@@ -243,7 +289,14 @@
     }
 
     function init() {
+        fileSystem.readSystemFromFile();
+        var tmp = fsStorage;
+        content = $('.content');
+        content.contextmenu(showContextMenu);
+        fullSystemList = $('.list');
+
         //context menu
+        menuUl = $('ul.contextMenu');
         $('.contextMenu > #newFolder').click(clickAddFolder);
         $('.contextMenu > #newFile').click(clickAddFile);
         $('.contextMenu > #rename').click(clickRename);
@@ -256,35 +309,19 @@
         $('button#back').click(clickBack);
         $('button#forward').click(clickForward);
         //files three
-        makeThree(fsStorage[0], $('.list'));
+        makeThree(fsStorage[0], fullSystemList);
 
     };
 
 // begin execution
 
     $(document).ready(function () {
-
-
-        menuUl = $('ul.contextMenu');
-
-
-
-        //  readSystemFromFile();
         init();
 
         $(this).bind("contextmenu", function(e) {
             e.preventDefault();
         });
-        /*
-        $(document).on('contextmenu', function (e) {
-            e.stopPropagation();
-            console.log('stop context');
-           return false;
-        });
-*/
     });
-
-
 })( );
 
 
